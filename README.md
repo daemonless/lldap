@@ -163,7 +163,8 @@ secrets:
     file: ./secrets/lldap_smtp_password
 ```
 ### Use the secrets in your service
-If you use podman managed secrets, you need to make sure
+If you use podman managed secrets, you need to make sure that file ownership and permissions allow
+the app to access the secrets.
 ```yaml
 services:
   lldap:

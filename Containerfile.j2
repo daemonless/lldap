@@ -2,7 +2,7 @@ ARG BASE_VERSION=15
 FROM ghcr.io/daemonless/base:${BASE_VERSION}
 
 ARG FREEBSD_ARCH=amd64
-ARG PKG_NAME="net/lldap"
+ARG PKG_NAME="lldap"
 ARG PACKAGES="zstd ${PKG_NAME}"
 ARG APP_VERSION="latest"
 #ARG DOWNLOAD_URL="https://example.com/lldap-${APP_VERSION}.tar.gz"
@@ -16,6 +16,7 @@ LABEL org.opencontainers.image.title="lldap" \
       org.opencontainers.image.licenses="GPL-3.0-only" \
       org.opencontainers.image.vendor="daemonless" \
       org.opencontainers.image.authors="daemonless" \
+      io.daemonless.upstream-mode=pkg \
       io.daemonless.category="Infrastructure" \
       io.daemonless.port="17170" \
       io.daemonless.arch="${FREEBSD_ARCH}" \
