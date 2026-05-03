@@ -1,11 +1,11 @@
 {
-  "generated": "2026-05-03T00:28:21Z",
+  "generated": "2026-05-03T21:39:06Z",
   "image": "lldap",
   "tags": {
     "pkg": {
       "app_version": "0.6.2_2",
       "arch": "amd64",
-      "generated": "2026-05-03T00:27:09Z",
+      "generated": "2026-05-03T21:37:58Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -185,9 +185,9 @@
       }
     },
     "pkg-latest": {
-      "app_version": "0.6.2_3",
+      "app_version": "0.6.3",
       "arch": "amd64",
-      "generated": "2026-05-03T00:27:09Z",
+      "generated": "2026-05-03T21:33:05Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -321,7 +321,7 @@
           },
           {
             "name": "lldap",
-            "version": "0.6.2_3"
+            "version": "0.6.3"
           },
           {
             "name": "oniguruma",
