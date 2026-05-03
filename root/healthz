@@ -1,0 +1,9 @@
+#!/bin/sh
+# Daemonless standard healthcheck for lldap
+
+# Standard Mode: Check /ready or HTTP endpoint
+if /app/lldap healthcheck >/dev/null 2>&1; then
+    exit 0
+else
+    exit 1
+fi

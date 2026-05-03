@@ -1,0 +1,128 @@
+name: lldap
+
+x-daemonless:
+  title: "lldap"
+  icon: ":material-apps:"  # https://pictogrammers.com/library/mdi/ (material-) or https://simpleicons.org/ (simple-)
+  category: "Infrastructure"
+  description: "This project is a lightweight authentication server that provides an opinionated, simplified LDAP interface for authentication."
+  upstream_url: "https://github.com/lldap/lldap"
+  web_url: "https://github.com/lldap/lldap"
+  freshports_url: "https://www.freshports.org/net/lldap/"
+  user: "bsd"
+  mlock: false
+  community: "Discord:https://discord.gg/Kb9tkhecZT"
+  notes: |
+    ## First time setup
+    To configure the admin user with password and email address during the first startup, you can define some
+    additional environment variables in your container file:
+    ```yaml
+    services:
+      lldap:
+        env:
+          - LLDAP_LDAP_USER_EMAIL="admin@example.com"
+          - LLDAP_LDAP_USER_PASS="very_secure_password"
+    ```
+    
+    ## Persistent secret values
+    To set crypto secrets persistently and securely it is best to provide them as secrets to the container.  
+    Define the at the top level of your container file.  
+    ### Define the secrets
+    You can either use podman managed secrets like this (assuming your created secrets in podman with the names
+    `lldap_jwt_secret`, `lldap_key_seed` and `lldap_smtp_password`):
+    ```yaml
+    secrets:
+      lldap_jwt_secret:
+        external: true
+      lldap_key_seed:
+        external: true
+      lldap_smtp_password:
+        external: true
+    ```
+    Or just write the secrets to files next to your container file and define them like shown below.  
+    The files should be owned by $PUID:$PGID and have the appropriate permissions (like `0400`).
+    ```yaml
+    secrets:
+      lldap_jwt_secret:
+        file: ./secrets/lldap_jwt_secret
+      lldap_key_seed:
+        file: ./secrets/lldap_key_seed
+      lldap_smtp_password:
+        file: ./secrets/lldap_smtp_password
+    ```
+    ### Use the secrets in your service
+    If you use podman managed secrets, you need to make sure
+    ```yaml
+    services:
+      lldap:
+        secrets:
+          - source: lldap_jwt_secret
+              uid: 1000
+              gid: 1000
+              mode: "0400"
+          - source: lldap_key_seed
+              uid: 1000
+              gid: 1000
+              mode: "0400"
+          - source: lldap_smtp_password
+              uid: 1000
+              gid: 1000
+              mode: "0400"
+    ```
+    If you provide the secrets directly from files using the second method from above and have set the
+    owner and permissions appropriately, then you can simple do:
+    ```yaml
+    services:
+      lldap:
+        secrets:
+          - lldap_jwt_secret
+          - lldap_key_seed
+          - lldap_smtp_password
+    ```
+    ### Configure `lldap` to use your secrets
+    To configure `lldap` to use the secrets you can define a few environment variables:
+    ```yaml
+    service:
+      env:
+        - LLDAP_JWT_SECRET_FILE="/var/run/secrets/lldap_jwt_secret"
+        - LLDAP_KEY_SEED_FILE="/var/run/secrets/lldap_key_seed"
+        - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="/var/run/secrets/lldap_smtp_password"
+    ```
+    
+  docs:
+    env:
+      PUID: "User ID for the application process"
+      PGID: "Group ID for the application process"
+      TZ: "Timezone for the container"
+    volumes:
+      /config: "Configuration directory"
+    ports:
+      17170: "Web UI"
+      3890:  "LDAP"
+
+services:
+  lldap:
+    image: ghcr.io/daemonless/lldap:latest
+    container_name: lldap
+    restart: unless-stopped
+
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - LLDAP_LDAP_USER_PASS="path/to/secret"
+      - LLDAP_LDAP_USER_EMAIL="path/to/secret"
+      - LLDAP_JWT_SECRET_FILE="path/to/secret"
+      - LLDAP_KEY_SEED_FILE="path/to/secret"
+      - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
+    secrets:
+      - source: lldap_jwt_secret
+      - source: lldap_key_seed
+      - source: lldap_smtp_password
+
+    volumes:
+      - /path/to/containers/lldap:/config
+
+    ports:
+      - 17170:17170
+      - 3890:3890
+

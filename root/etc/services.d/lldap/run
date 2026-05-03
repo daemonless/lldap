@@ -1,0 +1,11 @@
+#!/bin/sh
+# lldap s6 service
+
+echo "[INFO] Starting lldap..."
+
+# Standard start command for lldap
+exec 2>&1
+exec /usr/local/bin/s6-notifyoncheck -c /healthz \
+     /usr/local/bin/s6-setuidgid bsd \
+     cd /app \
+     /app/lldap run --config-file /config/lldap_config.toml

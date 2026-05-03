@@ -1,0 +1,13 @@
+#!/bin/sh
+# Initialize lldp configuration
+
+mkdir /config/data
+
+# If no config exists, create a minimal one
+if [ ! -f /config/lldap_config.toml ]; then
+  cp /etc/templates/lldap_config_template.toml /config/lldap_config.toml
+
+  echo "[lldap] Created minimal example configuration file"
+fi
+
+chown -R bsd:bsd /app /config

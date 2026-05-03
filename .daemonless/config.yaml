@@ -1,0 +1,22 @@
+# dbuild configuration file
+# Place in .daemonless/config.yaml or .dbuild.yaml (higher priority)
+#
+# Full reference: https://github.com/daemonless/dbuild
+
+build:
+  variants:
+    - tag: pkg
+      containerfile: Containerfile
+      default: true
+    - tag: pkg-latest
+      containerfile: Containerfile
+      aliases: ["latest"]
+      args:
+        BASE_VERSION: "15-latest"
+
+cit:
+  mode: screenshot
+  port: 17170
+  health: /health
+  ssim_threshold: 0.85
+  ready: "starting service: \"http\""
