@@ -18,14 +18,12 @@ This project is a lightweight authentication server that provides an opinionated
 | **Website** | [https://github.com/lldap/lldap](https://github.com/lldap/lldap) |
 
 ## Version Tags
-
 | Tag | Description | Best For |
 | :--- | :--- | :--- |
-| `pkg` | **Upstream Binary**. Built from official release. | Most users. Matches Linux Docker behavior. |
-| `latest` / `pkg-latest` | **FreeBSD Latest**. Rolling package updates. | Newest FreeBSD packages. |
+| `pkg` | **Upstream Binary**. Built from official release. | Most users — recommended. |
+| `latest` / `pkg-latest` | **FreeBSD Latest**. Rolling package updates. | Staying current. |
 
 ## Prerequisites
-
 Before deploying, ensure your host environment is ready. See the [Quick Start Guide](https://daemonless.io/guides/quick-start) for host setup instructions.
 
 ## Deployment
@@ -35,12 +33,12 @@ Before deploying, ensure your host environment is ready. See the [Quick Start Gu
 ```yaml
 services:
   lldap:
-    image: ghcr.io/daemonless/lldap:latest
+    image: "ghcr.io/daemonless/lldap:latest"
     container_name: lldap
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=UTC
+      - PUID=1000  # User ID for the application process
+      - PGID=1000  # Group ID for the application process
+      - TZ=UTC  # Timezone for the container
       - LLDAP_LDAP_USER_PASS="path/to/secret"
       - LLDAP_LDAP_USER_EMAIL="path/to/secret"
       - LLDAP_JWT_SECRET_FILE="path/to/secret"
@@ -49,10 +47,72 @@ services:
     volumes:
       - "/path/to/containers/lldap:/config"
     ports:
-      - 17170:17170
-      - 3890:3890
+      - "17170:17170"
+      - "3890:3890"
     restart: unless-stopped
 ```
+
+### AppJail Director
+**.env**:
+
+```
+# .env
+
+DIRECTOR_PROJECT=lldap
+PUID=1000
+PGID=1000
+TZ=UTC
+LLDAP_LDAP_USER_PASS="path/to/secret"
+LLDAP_LDAP_USER_EMAIL="path/to/secret"
+LLDAP_JWT_SECRET_FILE="path/to/secret"
+LLDAP_KEY_SEED_FILE="path/to/secret"
+LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
+```
+
+**appjail-director.yml**:
+
+```yaml
+# appjail-director.yml
+
+options:
+  - virtualnet: ':<random> default'
+  - nat:
+services:
+  lldap:
+    name: lldap
+    options:
+      - container: 'boot args:--pull'
+      - expose: '17170:17170 proto:tcp'
+      - expose: '3890:3890 proto:tcp'
+    oci:
+      user: root
+      environment:
+        - PUID: !ENV '${PUID}'
+        - PGID: !ENV '${PGID}'
+        - TZ: !ENV '${TZ}'
+        - LLDAP_LDAP_USER_PASS: !ENV '${LLDAP_LDAP_USER_PASS}'
+        - LLDAP_LDAP_USER_EMAIL: !ENV '${LLDAP_LDAP_USER_EMAIL}'
+        - LLDAP_JWT_SECRET_FILE: !ENV '${LLDAP_JWT_SECRET_FILE}'
+        - LLDAP_KEY_SEED_FILE: !ENV '${LLDAP_KEY_SEED_FILE}'
+        - LLDAP_SMTP_OPTIONS__PASSWORD_FILE: !ENV '${LLDAP_SMTP_OPTIONS__PASSWORD_FILE}'
+    volumes:
+      - lldap: /config
+volumes:
+  lldap:
+    device: '/path/to/containers/lldap'
+```
+
+**Makejail**:
+
+```
+# Makejail
+
+ARG tag=pkg
+
+OPTION overwrite=force
+OPTION from=ghcr.io/daemonless/lldap:${tag}
+```
+**Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
 
 ### Podman CLI
 
@@ -72,13 +132,36 @@ podman run -d --name lldap \
   ghcr.io/daemonless/lldap:latest
 ```
 
+### AppJail
+
+```bash
+appjail oci run -Pd \
+  -o overwrite=force \
+  -o container="args:--pull" \
+  -o virtualnet=":<random> default" \
+  -o nat \
+  -o expose="17170:17170 proto:tcp" \
+  -o expose="3890:3890 proto:tcp" \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -e TZ=UTC \
+  -e LLDAP_LDAP_USER_PASS="path/to/secret" \
+  -e LLDAP_LDAP_USER_EMAIL="path/to/secret" \
+  -e LLDAP_JWT_SECRET_FILE="path/to/secret" \
+  -e LLDAP_KEY_SEED_FILE="path/to/secret" \
+  -e LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
+  -o fstab="/path/to/containers/lldap /config <pseudofs>" \
+  ghcr.io/daemonless/lldap:latest lldap
+```
+**Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
+
 ### Ansible
 
 ```yaml
 - name: Deploy lldap
   containers.podman.podman_container:
     name: lldap
-    image: ghcr.io/daemonless/lldap:latest
+    image: "ghcr.io/daemonless/lldap:latest"
     state: started
     restart_policy: always
     env:
@@ -96,6 +179,8 @@ podman run -d --name lldap \
     volumes:
       - "/path/to/containers/lldap:/config"
 ```
+
+Access at: `http://localhost:17170`
 
 ## Parameters
 
@@ -205,7 +290,7 @@ service:
 
 **Architectures:** amd64
 **User:** `bsd` (UID/GID via PUID/PGID, defaults to 1000:1000)
-**Base:** FreeBSD 15.0
+**Base:** FreeBSD 15
 
 ---
 
