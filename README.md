@@ -49,8 +49,11 @@ services:
     ports:
       - "17170:17170"
       - "3890:3890"
-    restart: unless-stopped
+    # always (not unless-stopped) so FreeBSD's podman rc.d auto-starts it at boot
+    restart: always
 ```
+
+Save as `compose.yaml`, then run `podman-compose up -d`.
 
 ### AppJail Director
 **.env**:
@@ -112,6 +115,9 @@ ARG tag=pkg
 OPTION overwrite=force
 OPTION from=ghcr.io/daemonless/lldap:${tag}
 ```
+
+Save the files above, then run `appjail-director up`.
+
 **Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
 
 ### Podman CLI
@@ -131,6 +137,8 @@ podman run -d --name lldap \
   -v /path/to/containers/lldap:/config \
   ghcr.io/daemonless/lldap:latest
 ```
+
+Save as `run.sh`, then run `sh run.sh`.
 
 ### AppJail
 
@@ -153,7 +161,48 @@ appjail oci run -Pd \
   -o fstab="/path/to/containers/lldap /config <pseudofs>" \
   ghcr.io/daemonless/lldap:latest lldap
 ```
+
+Save as `run.sh`, then run `sh run.sh`.
+
 **Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
+
+### Bastille
+
+> [!WARNING]
+> Bastille's OCI support is **experimental**. It requires `buildah`, shares the host network stack (`inherit`), and persists image-declared volumes under `--data-path`.
+
+```yaml
+services:
+  lldap:
+    image: "ghcr.io/daemonless/lldap:latest"
+    container_name: lldap
+    network_mode: host  # jail shares host networking
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - LLDAP_LDAP_USER_PASS="path/to/secret"
+      - LLDAP_LDAP_USER_EMAIL="path/to/secret"
+      - LLDAP_JWT_SECRET_FILE="path/to/secret"
+      - LLDAP_KEY_SEED_FILE="path/to/secret"
+      - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
+```
+
+Save as `podman-compose.yml`, then run `bastille up`. Or via CLI:
+
+```bash
+bastille create -O \
+  --env PUID=1000 \
+  --env PGID=1000 \
+  --env TZ=UTC \
+  --env LLDAP_LDAP_USER_PASS="path/to/secret" \
+  --env LLDAP_LDAP_USER_EMAIL="path/to/secret" \
+  --env LLDAP_JWT_SECRET_FILE="path/to/secret" \
+  --env LLDAP_KEY_SEED_FILE="path/to/secret" \
+  --env LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
+  --data-path /path/to/containers/lldap \
+  lldap ghcr.io/daemonless/lldap:latest inherit
+```
 
 ### Ansible
 
@@ -179,6 +228,8 @@ appjail oci run -Pd \
     volumes:
       - "/path/to/containers/lldap:/config"
 ```
+
+Save as `lldap-deploy.yaml`, then run `ansible-playbook lldap-deploy.yaml`.
 
 Access at: `http://localhost:17170`
 
