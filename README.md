@@ -7,6 +7,7 @@ Source: dbuild templates
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/daemonless/lldap/build.yaml?style=flat-square&label=Build&color=green)](https://github.com/daemonless/lldap/actions)
 [![Last Commit](https://img.shields.io/github/last-commit/daemonless/lldap?style=flat-square&label=Last+Commit&color=blue)](https://github.com/daemonless/lldap/commits)
+[![OCI Pulls](https://img.shields.io/docker/pulls/daemonless/lldap?style=flat-square&label=OCI+Pulls&color=blue)](https://hub.docker.com/r/daemonless/lldap)
 
 This project is a lightweight authentication server that provides an opinionated, simplified LDAP interface for authentication.
 
@@ -84,7 +85,7 @@ services:
   lldap:
     name: lldap
     options:
-      - container: 'boot args:--pull'
+      - container: 'args:--pull'
       - expose: '17170:17170 proto:tcp'
       - expose: '3890:3890 proto:tcp'
     oci:
@@ -112,13 +113,18 @@ volumes:
 
 ARG tag=pkg
 
+OPTION container=boot
 OPTION overwrite=force
 OPTION from=ghcr.io/daemonless/lldap:${tag}
 ```
 
 Save the files above, then run `appjail-director up`.
 
-**Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
+
+> [!WARNING]
+> Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the jail's IPv4 address or hostname assigned by the virtual network.
+>
+> To avoid exposing ports, just remove the `expose` option in your `appjail-director.yml` or from your command-line arguments.
 
 ### Podman CLI
 
@@ -142,6 +148,7 @@ Save as `run.sh`, then run `sh run.sh`.
 
 ### AppJail
 
+
 ```bash
 appjail oci run -Pd \
   -o overwrite=force \
@@ -162,21 +169,26 @@ appjail oci run -Pd \
   ghcr.io/daemonless/lldap:latest lldap
 ```
 
-Save as `run.sh`, then run `sh run.sh`.
+Save the files above, then run `sh run.sh`.
 
-**Note**: Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the IPv4 address assigned by the virtual network.
+
+> [!WARNING]
+> Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the jail's IPv4 address or hostname assigned by the virtual network.
+>
+> To avoid exposing ports, just remove the `expose` option in your `appjail-director.yml` or from your command-line arguments.
 
 ### Bastille
 
 > [!WARNING]
-> Bastille's OCI support is **experimental**. It requires `buildah`, shares the host network stack (`inherit`), and persists image-declared volumes under `--data-path`.
+> Bastille's OCI support is **experimental**. It requires `buildah` and shares the host network stack (`inherit`). Mount volumes with `--volume HOST JAIL`; without it, image-declared volumes are stored under `${bastille_volumesdir}/${jail}`.
 
 ```yaml
 services:
   lldap:
+    name: lldap
     image: "ghcr.io/daemonless/lldap:latest"
-    container_name: lldap
-    network_mode: host  # jail shares host networking
+    network:
+      - mode: host
     environment:
       - PUID=1000
       - PGID=1000
@@ -186,9 +198,11 @@ services:
       - LLDAP_JWT_SECRET_FILE="path/to/secret"
       - LLDAP_KEY_SEED_FILE="path/to/secret"
       - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
+    volumes:
+      - "/path/to/containers/lldap:/config"
 ```
 
-Save as `podman-compose.yml`, then run `bastille up`. Or via CLI:
+Save as `bastille-compose.yml`, then run `bastille up`. Or via CLI:
 
 ```bash
 bastille create -O \
@@ -200,7 +214,7 @@ bastille create -O \
   --env LLDAP_JWT_SECRET_FILE="path/to/secret" \
   --env LLDAP_KEY_SEED_FILE="path/to/secret" \
   --env LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
-  --data-path /path/to/containers/lldap \
+  --volume /path/to/containers/lldap /config \
   lldap ghcr.io/daemonless/lldap:latest inherit
 ```
 
