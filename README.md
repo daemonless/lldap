@@ -34,7 +34,7 @@ Before deploying, ensure your host environment is ready. See the [Quick Start Gu
 ```yaml
 services:
   lldap:
-    image: "ghcr.io/daemonless/lldap:latest"
+    image: "ghcr.io/daemonless/lldap:pkg"
     container_name: lldap
     environment:
       - PUID=1000  # User ID for the application process
@@ -46,7 +46,7 @@ services:
       - LLDAP_KEY_SEED_FILE="path/to/secret"
       - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
     volumes:
-      - "/path/to/containers/lldap:/config"
+      - "/containers/lldap:/config"
     ports:
       - "17170:17170"
       - "3890:3890"
@@ -103,7 +103,7 @@ services:
       - lldap: /config
 volumes:
   lldap:
-    device: '/path/to/containers/lldap'
+    device: '/containers/lldap'
 ```
 
 **Makejail**:
@@ -126,57 +126,6 @@ Save the files above, then run `appjail-director up`.
 >
 > To avoid exposing ports, just remove the `expose` option in your `appjail-director.yml` or from your command-line arguments.
 
-### Podman CLI
-
-```bash
-podman run -d --name lldap \
-  -p 17170:17170 \
-  -p 3890:3890 \
-  -e PUID=1000 \
-  -e PGID=1000 \
-  -e TZ=UTC \
-  -e LLDAP_LDAP_USER_PASS="path/to/secret" \
-  -e LLDAP_LDAP_USER_EMAIL="path/to/secret" \
-  -e LLDAP_JWT_SECRET_FILE="path/to/secret" \
-  -e LLDAP_KEY_SEED_FILE="path/to/secret" \
-  -e LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
-  -v /path/to/containers/lldap:/config \
-  ghcr.io/daemonless/lldap:latest
-```
-
-Save as `run.sh`, then run `sh run.sh`.
-
-### AppJail
-
-
-```bash
-appjail oci run -Pd \
-  -o overwrite=force \
-  -o container="args:--pull" \
-  -o virtualnet=":<random> default" \
-  -o nat \
-  -o expose="17170:17170 proto:tcp" \
-  -o expose="3890:3890 proto:tcp" \
-  -e PUID=1000 \
-  -e PGID=1000 \
-  -e TZ=UTC \
-  -e LLDAP_LDAP_USER_PASS="path/to/secret" \
-  -e LLDAP_LDAP_USER_EMAIL="path/to/secret" \
-  -e LLDAP_JWT_SECRET_FILE="path/to/secret" \
-  -e LLDAP_KEY_SEED_FILE="path/to/secret" \
-  -e LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
-  -o fstab="/path/to/containers/lldap /config <pseudofs>" \
-  ghcr.io/daemonless/lldap:latest lldap
-```
-
-Save the files above, then run `sh run.sh`.
-
-
-> [!WARNING]
-> Exposing ports in AppJail means that your service can be reached from remote hosts. If that is not your intention, do not expose the ports and communicate with the service using the jail's IPv4 address or hostname assigned by the virtual network.
->
-> To avoid exposing ports, just remove the `expose` option in your `appjail-director.yml` or from your command-line arguments.
-
 ### Bastille
 
 > [!WARNING]
@@ -186,7 +135,7 @@ Save the files above, then run `sh run.sh`.
 services:
   lldap:
     name: lldap
-    image: "ghcr.io/daemonless/lldap:latest"
+    image: "ghcr.io/daemonless/lldap:pkg"
     network:
       - mode: host
     environment:
@@ -199,51 +148,10 @@ services:
       - LLDAP_KEY_SEED_FILE="path/to/secret"
       - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
     volumes:
-      - "/path/to/containers/lldap:/config"
+      - "/containers/lldap:/config"
 ```
 
-Save as `bastille-compose.yml`, then run `bastille up`. Or via CLI:
-
-```bash
-bastille create -O \
-  --env PUID=1000 \
-  --env PGID=1000 \
-  --env TZ=UTC \
-  --env LLDAP_LDAP_USER_PASS="path/to/secret" \
-  --env LLDAP_LDAP_USER_EMAIL="path/to/secret" \
-  --env LLDAP_JWT_SECRET_FILE="path/to/secret" \
-  --env LLDAP_KEY_SEED_FILE="path/to/secret" \
-  --env LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret" \
-  --volume /path/to/containers/lldap /config \
-  lldap ghcr.io/daemonless/lldap:latest inherit
-```
-
-### Ansible
-
-```yaml
-- name: Deploy lldap
-  containers.podman.podman_container:
-    name: lldap
-    image: "ghcr.io/daemonless/lldap:latest"
-    state: started
-    restart_policy: always
-    env:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: "UTC"
-      LLDAP_LDAP_USER_PASS: ""path/to/secret""
-      LLDAP_LDAP_USER_EMAIL: ""path/to/secret""
-      LLDAP_JWT_SECRET_FILE: ""path/to/secret""
-      LLDAP_KEY_SEED_FILE: ""path/to/secret""
-      LLDAP_SMTP_OPTIONS__PASSWORD_FILE: ""path/to/secret""
-    ports:
-      - "17170:17170"
-      - "3890:3890"
-    volumes:
-      - "/path/to/containers/lldap:/config"
-```
-
-Save as `lldap-deploy.yaml`, then run `ansible-playbook lldap-deploy.yaml`.
+Save as `bastille-compose.yml`, then run `bastille up`.
 
 Access at: `http://localhost:17170`
 
