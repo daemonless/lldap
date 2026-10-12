@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-11T07:38:11Z",
+  "generated": "2026-10-12T22:44:36Z",
   "image": "lldap",
   "tags": {
     "pkg": {
       "app_version": "0.6.3_3",
       "arch": "amd64",
-      "generated": "2026-10-11T07:37:35Z",
+      "generated": "2026-10-12T22:42:46Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -345,7 +345,7 @@
     "pkg-latest": {
       "app_version": "0.6.3_3",
       "arch": "amd64",
-      "generated": "2026-10-11T07:37:05Z",
+      "generated": "2026-10-12T22:44:02Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -592,7 +592,7 @@
               "MPL20"
             ],
             "name": "ca_root_nss",
-            "version": "3.130"
+            "version": "3.131"
           },
           {
             "licenses": [

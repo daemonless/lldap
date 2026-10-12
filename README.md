@@ -40,11 +40,6 @@ services:
       - PUID=1000  # User ID for the application process
       - PGID=1000  # Group ID for the application process
       - TZ=UTC  # Timezone for the container
-      - LLDAP_LDAP_USER_PASS="path/to/secret"
-      - LLDAP_LDAP_USER_EMAIL="path/to/secret"
-      - LLDAP_JWT_SECRET_FILE="path/to/secret"
-      - LLDAP_KEY_SEED_FILE="path/to/secret"
-      - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
     volumes:
       - "/containers/lldap:/config"
     ports:
@@ -66,11 +61,6 @@ DIRECTOR_PROJECT=lldap
 PUID=1000
 PGID=1000
 TZ=UTC
-LLDAP_LDAP_USER_PASS="path/to/secret"
-LLDAP_LDAP_USER_EMAIL="path/to/secret"
-LLDAP_JWT_SECRET_FILE="path/to/secret"
-LLDAP_KEY_SEED_FILE="path/to/secret"
-LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
 ```
 
 **appjail-director.yml**:
@@ -94,11 +84,6 @@ services:
         - PUID: !ENV '${PUID}'
         - PGID: !ENV '${PGID}'
         - TZ: !ENV '${TZ}'
-        - LLDAP_LDAP_USER_PASS: !ENV '${LLDAP_LDAP_USER_PASS}'
-        - LLDAP_LDAP_USER_EMAIL: !ENV '${LLDAP_LDAP_USER_EMAIL}'
-        - LLDAP_JWT_SECRET_FILE: !ENV '${LLDAP_JWT_SECRET_FILE}'
-        - LLDAP_KEY_SEED_FILE: !ENV '${LLDAP_KEY_SEED_FILE}'
-        - LLDAP_SMTP_OPTIONS__PASSWORD_FILE: !ENV '${LLDAP_SMTP_OPTIONS__PASSWORD_FILE}'
     volumes:
       - lldap: /config
 volumes:
@@ -142,11 +127,6 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - LLDAP_LDAP_USER_PASS="path/to/secret"
-      - LLDAP_LDAP_USER_EMAIL="path/to/secret"
-      - LLDAP_JWT_SECRET_FILE="path/to/secret"
-      - LLDAP_KEY_SEED_FILE="path/to/secret"
-      - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="path/to/secret"
     volumes:
       - "/containers/lldap:/config"
 ```
@@ -164,11 +144,6 @@ Access at: `http://localhost:17170`
 | `PUID` | `1000` | User ID for the application process |
 | `PGID` | `1000` | Group ID for the application process |
 | `TZ` | `UTC` | Timezone for the container |
-| `LLDAP_LDAP_USER_PASS` | `"path/to/secret"` |  |
-| `LLDAP_LDAP_USER_EMAIL` | `"path/to/secret"` |  |
-| `LLDAP_JWT_SECRET_FILE` | `"path/to/secret"` |  |
-| `LLDAP_KEY_SEED_FILE` | `"path/to/secret"` |  |
-| `LLDAP_SMTP_OPTIONS__PASSWORD_FILE` | `"path/to/secret"` |  |
 
 ### Volumes
 
@@ -183,81 +158,22 @@ Access at: `http://localhost:17170`
 | `17170` | TCP | Web UI |
 | `3890` | TCP | LDAP |
 
-## First time setup
-To configure the admin user with password and email address during the first startup, you can define some
-additional environment variables in your container file:
-```yaml
-services:
-  lldap:
-    env:
-      - LLDAP_LDAP_USER_EMAIL="admin@example.com"
-      - LLDAP_LDAP_USER_PASS="very_secure_password"
-```
+## First start
+The first start writes `/config/lldap_config.toml` with its own random
+JWT secret, key seed and admin password, and logs the admin login once:
+`[lldap] Admin login: admin / <password>`. Change the password in the web UI.
 
-## Persistent secret values
-To set crypto secrets persistently and securely it is best to provide them as secrets to the container.  
-Define the at the top level of your container file.  
-### Define the secrets
-You can either use podman managed secrets like this (assuming your created secrets in podman with the names
-`lldap_jwt_secret`, `lldap_key_seed` and `lldap_smtp_password`):
-```yaml
-secrets:
-  lldap_jwt_secret:
-    external: true
-  lldap_key_seed:
-    external: true
-  lldap_smtp_password:
-    external: true
-```
-Or just write the secrets to files next to your container file and define them like shown below.  
-The files should be owned by $PUID:$PGID and have the appropriate permissions (like `0400`).
-```yaml
-secrets:
-  lldap_jwt_secret:
-    file: ./secrets/lldap_jwt_secret
-  lldap_key_seed:
-    file: ./secrets/lldap_key_seed
-  lldap_smtp_password:
-    file: ./secrets/lldap_smtp_password
-```
-### Use the secrets in your service
-If you use podman managed secrets, you need to make sure that file ownership and permissions allow
-the app to access the secrets.
+To choose them yourself instead, set any of these before the first start
+(the JWT secret and the password can also be read from a file:
+`LLDAP_JWT_SECRET_FILE`, `LLDAP_LDAP_USER_PASS_FILE`):
 ```yaml
 services:
   lldap:
-    secrets:
-      - source: lldap_jwt_secret
-          uid: 1000
-          gid: 1000
-          mode: "0400"
-      - source: lldap_key_seed
-          uid: 1000
-          gid: 1000
-          mode: "0400"
-      - source: lldap_smtp_password
-          uid: 1000
-          gid: 1000
-          mode: "0400"
-```
-If you provide the secrets directly from files using the second method from above and have set the
-owner and permissions appropriately, then you can simple do:
-```yaml
-services:
-  lldap:
-    secrets:
-      - lldap_jwt_secret
-      - lldap_key_seed
-      - lldap_smtp_password
-```
-### Configure `lldap` to use your secrets
-To configure `lldap` to use the secrets you can define a few environment variables:
-```yaml
-service:
-  env:
-    - LLDAP_JWT_SECRET_FILE="/var/run/secrets/lldap_jwt_secret"
-    - LLDAP_KEY_SEED_FILE="/var/run/secrets/lldap_key_seed"
-    - LLDAP_SMTP_OPTIONS__PASSWORD_FILE="/var/run/secrets/lldap_smtp_password"
+    environment:
+      - LLDAP_LDAP_USER_EMAIL=admin@example.com
+      - LLDAP_LDAP_USER_PASS=very_secure_password
+      - LLDAP_JWT_SECRET=<random>
+      - LLDAP_KEY_SEED=<random>
 ```
 
 
