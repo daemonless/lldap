@@ -1,13 +1,27 @@
 #!/bin/sh
-# Initialize lldp configuration
+# Initialize lldap configuration
 
-mkdir /config/data
+mkdir -p /config/data
 
-# If no config exists, create a minimal one
+rand() {
+  openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'
+}
+
+# If no config exists, create one with its own secrets: the template's
+# jwt_secret, key_seed and admin password are placeholders anyone can read.
+# LLDAP_* environment variables still override what is written here.
 if [ ! -f /config/lldap_config.toml ]; then
-  cp /etc/templates/lldap_config_template.toml /config/lldap_config.toml
+  pass=$(rand | cut -c1-24)
+  (umask 077; sed \
+    -e "s|^jwt_secret = .*|jwt_secret = \"$(rand)\"|" \
+    -e "s|^key_seed = .*|key_seed = \"$(rand)\"|" \
+    -e "s|^ldap_user_pass = .*|ldap_user_pass = \"$pass\"|" \
+    /etc/templates/lldap_config_template.toml > /config/lldap_config.toml)
 
-  echo "[lldap] Created minimal example configuration file"
+  echo "[lldap] Created /config/lldap_config.toml with its own secrets"
+  if [ -z "$LLDAP_LDAP_USER_PASS" ]; then
+    echo "[lldap] Admin login: admin / $pass (change it in the web UI)"
+  fi
 fi
 
 chown -R bsd:bsd /app /config
