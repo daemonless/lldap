@@ -1,0 +1,9 @@
+#!/bin/sh
+# Start lldap; /init has already dropped to the run user.
+
+echo "[INFO] Starting lldap..."
+
+# Standard start command for lldap
+exec 2>&1
+cd /app
+exec /app/lldap run --config-file /config/lldap_config.toml

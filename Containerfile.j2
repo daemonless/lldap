@@ -1,5 +1,5 @@
 ARG BASE_VERSION=15
-FROM ghcr.io/daemonless/base:${BASE_VERSION}
+FROM ghcr.io/daemonless/base-exec:${BASE_VERSION}
 
 ARG FREEBSD_ARCH=amd64
 ARG PKG_NAME="lldap"
@@ -39,16 +39,18 @@ RUN pkg update && \
 RUN LLDAP_VERSION=$(pkg info "${PKG_NAME}" | sed -n 's/.*Version.*: *//p') && \
     mkdir -m 0755 -p /app && echo "$LLDAP_VERSION" > /app/version
 
-
 RUN cp -r /usr/local/lldap_server/lldap /usr/local/lldap_server/app \
           /usr/local/bin/lldap_migration_tool /usr/local/bin/lldap_set_password \
           /app
 
 # Copy root filesystem
 COPY root/ /
+RUN chmod +x /daemonless/libexec/lldap /daemonless/init.d/*
+
+CMD ["/daemonless/libexec/lldap"]
 
 # Set permissions
-RUN chmod +x /etc/services.d/lldap/run /etc/cont-init.d/* /healthz
+RUN chmod +x /healthz
 
 # --- Expose (Injected by Generator) ---
 {%- if ports %}
